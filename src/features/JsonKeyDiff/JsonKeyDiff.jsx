@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FileJson, Trash2, AlertTriangle, Key } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FileJson, Trash2, AlertTriangle, Key, Copy, FileSpreadsheet, Link2 } from 'lucide-react';
 import { Button, Card } from '../../components/ui';
 
 // Utility to recursively extract all keys from an object
@@ -29,6 +29,51 @@ const JsonKeyDiff = () => {
     const [error, setError] = useState(null);
     const [showDiffOnly, setShowDiffOnly] = useState(false);
     const [isDeepCompare, setIsDeepCompare] = useState(true);
+    const [syncScroll, setSyncScroll] = useState(true);
+
+    const leftRef = useRef(null);
+    const rightRef = useRef(null);
+
+    const handleLeftScroll = (e) => {
+        if (syncScroll && rightRef.current) {
+            rightRef.current.scrollTop = e.target.scrollTop;
+        }
+    };
+
+    const handleRightScroll = (e) => {
+        if (syncScroll && leftRef.current) {
+            leftRef.current.scrollTop = e.target.scrollTop;
+        }
+    };
+
+    const downloadFile = (content, filename) => {
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const copyToClipboard = () => {
+        if (!diffResult) return;
+        const data = showDiffOnly ? diffResult.filter(d => d.type !== 'same') : diffResult;
+        navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+    };
+
+    const exportAs = (format) => {
+        if (!diffResult) return;
+        const data = showDiffOnly ? diffResult.filter(d => d.type !== 'same') : diffResult;
+        if (format === 'json') {
+            downloadFile(JSON.stringify(data, null, 2), 'key-diff.json');
+        } else if (format === 'csv') {
+            const csv = 'Type,Key\n' + data.map(d => `"${d.type}","${d.key}"`).join('\n');
+            downloadFile(csv, 'key-diff.csv');
+        }
+    };
 
     const compareJSONKeys = () => {
         try {
@@ -143,7 +188,20 @@ const JsonKeyDiff = () => {
                     Show Differences Only
                 </label>
 
+                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer select-none bg-slate-700/50 px-3 py-1.5 rounded hover:bg-slate-700 border border-slate-600 transition-colors">
+                    <input
+                        type="checkbox"
+                        checked={syncScroll}
+                        onChange={(e) => setSyncScroll(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-500 text-blue-600 focus:ring-blue-500"
+                    />
+                    Sync Scroll
+                </label>
+
                 <div className="flex-1" />
+                <Button variant="ghost" onClick={copyToClipboard} icon={Copy} disabled={!diffResult}>Copy</Button>
+                <Button variant="ghost" onClick={() => exportAs('json')} icon={FileJson} disabled={!diffResult}>JSON</Button>
+                <Button variant="ghost" onClick={() => exportAs('csv')} icon={FileSpreadsheet} disabled={!diffResult}>CSV</Button>
                 <Button variant="ghost" onClick={handleClear} icon={Trash2}>Clear</Button>
             </div>
 
@@ -156,6 +214,8 @@ const JsonKeyDiff = () => {
             {/* Input Areas */}
             <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0 ${displayDiffs ? 'max-h-[40%]' : ''} transition-all duration-300`}>
                 <textarea
+                    ref={leftRef}
+                    onScroll={handleLeftScroll}
                     className="bg-slate-900 border border-slate-700 rounded-lg p-3 font-mono text-sm text-slate-300 resize-none focus:border-blue-500 outline-none w-full h-full placeholder:text-slate-600"
                     placeholder="JSON Object 1..."
                     value={leftInput}
@@ -163,6 +223,8 @@ const JsonKeyDiff = () => {
                     spellCheck="false"
                 />
                 <textarea
+                    ref={rightRef}
+                    onScroll={handleRightScroll}
                     className="bg-slate-900 border border-slate-700 rounded-lg p-3 font-mono text-sm text-slate-300 resize-none focus:border-blue-500 outline-none w-full h-full placeholder:text-slate-600"
                     placeholder="JSON Object 2..."
                     value={rightInput}
