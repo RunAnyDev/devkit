@@ -20,6 +20,7 @@ A sleek collection of developer tools built with React + Vite. Runs entirely in-
 | **.env to JSON** | Parse .env strings into JSON structures |
 | **SMTP Checker** | Verify SMTP server connectivity and credentials |
 | **JSON Beautifier** | Format and parse JSON payloads |
+| **Markdown Viewer** | Edit and preview Markdown with GFM tables, task lists, and Mermaid diagrams |
 | **Code Beautifier/Minifier** | Format and minify JS, CSS, HTML, and YAML code |
 
 ## Quick Start

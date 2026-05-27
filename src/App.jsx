@@ -13,7 +13,8 @@ import {
   FileJson,
   Code,
   Braces,
-  Table
+  Table,
+  FileText
 } from 'lucide-react';
 
 // Layout components
@@ -35,7 +36,8 @@ import {
   JsonBeautifier,
   CodeTools,
   JsonKeyDiff,
-  DataTablePreview
+  DataTablePreview,
+  MarkdownViewer
 } from './features';
 
 /**
@@ -56,6 +58,7 @@ const MENU_GROUPS = [
     label: 'Formatting',
     items: [
       { id: 'jsonbeautifier', label: 'JSON Beautifier', icon: Braces, keywords: ['json', 'format', 'pretty', 'beautify', 'indent', 'validate'] },
+      { id: 'markdown', label: 'Markdown Viewer', icon: FileText, keywords: ['markdown', 'md', 'viewer', 'editor', 'preview', 'mermaid', 'gfm'] },
       { id: 'codetools-js', label: 'JS Beautifier/Minifier', icon: Code, keywords: ['javascript', 'js', 'format', 'minify', 'beautify', 'compress'] },
       { id: 'codetools-css', label: 'CSS Beautifier/Minifier', icon: Code, keywords: ['css', 'format', 'minify', 'beautify', 'compress', 'style'] },
       { id: 'codetools-html', label: 'HTML Beautifier/Minifier', icon: Code, keywords: ['html', 'format', 'minify', 'beautify', 'compress', 'markup'] },
@@ -112,6 +115,7 @@ const FEATURE_COMPONENTS = {
   json2env: () => <JsonToEnv initialMode="json2env" />,
   env2json: () => <JsonToEnv initialMode="env2json" />,
   jsonbeautifier: JsonBeautifier,
+  markdown: MarkdownViewer,
   jsonkeydiff: JsonKeyDiff,
   datatable: DataTablePreview,
   'codetools-js': () => <CodeTools initialLanguage="javascript" languageRoutes={CODE_TOOL_ROUTES} />,
