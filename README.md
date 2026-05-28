@@ -47,7 +47,7 @@ npm run build
 
 Deployed automatically to GitHub Pages via GitHub Actions on push to `main`.
 
-**Live:** https://meesudzu.github.io/
+**Live:** https://kit.runany.dev
 
 ## License
 
