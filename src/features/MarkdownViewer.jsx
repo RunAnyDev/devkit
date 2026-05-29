@@ -2,7 +2,7 @@ import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import mermaid from 'mermaid';
-import { Check, Copy, Download, FileUp, Trash2 } from 'lucide-react';
+import { Check, Copy, Download, FileUp, Maximize2, Minimize2, Trash2 } from 'lucide-react';
 
 const DEFAULT_MARKDOWN = `# Markdown Viewer
 
@@ -33,6 +33,59 @@ mermaid.initialize({
     theme: 'dark',
     securityLevel: 'strict',
 });
+
+const MarkdownComponents = {
+    a: ({ children, ...props }) => (
+        <a className="text-blue-400 underline decoration-blue-400/40 underline-offset-2 hover:text-blue-300" target="_blank" rel="noreferrer" {...props}>
+            {children}
+        </a>
+    ),
+    blockquote: ({ children }) => (
+        <blockquote className="border-l-4 border-blue-500/50 bg-slate-950/50 py-2 pl-4 text-slate-400">
+            {children}
+        </blockquote>
+    ),
+    code: ({ className, children, ...props }) => {
+        const match = /language-(\w+)/.exec(className || '');
+        const code = String(children).replace(/\n$/, '');
+        const isBlock = Boolean(className) || String(children).includes('\n');
+
+        if (isBlock && match?.[1]?.toLowerCase() === 'mermaid') {
+            return <MermaidDiagram code={code} />;
+        }
+
+        if (!isBlock) {
+            return (
+                <code className="rounded bg-slate-950 px-1.5 py-0.5 font-mono text-sm text-blue-300" {...props}>
+                    {children}
+                </code>
+            );
+        }
+
+        return (
+            <pre className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 text-sm text-slate-300">
+                <code className={className} {...props}>{children}</code>
+            </pre>
+        );
+    },
+    h1: ({ children }) => <h1 className="mb-4 border-b border-slate-800 pb-3 text-3xl font-bold text-white">{children}</h1>,
+    h2: ({ children }) => <h2 className="mb-3 mt-6 text-2xl font-bold text-slate-100">{children}</h2>,
+    h3: ({ children }) => <h3 className="mb-2 mt-5 text-xl font-semibold text-slate-100">{children}</h3>,
+    hr: () => <hr className="my-6 border-slate-800" />,
+    li: ({ children }) => <li className="my-1 pl-1">{children}</li>,
+    ol: ({ children }) => <ol className="my-3 list-decimal space-y-1 pl-6">{children}</ol>,
+    p: ({ children }) => <p className="my-3 leading-7 text-slate-300">{children}</p>,
+    table: ({ children }) => (
+        <div className="my-4 overflow-x-auto rounded-lg border border-slate-800">
+            <table className="w-full border-collapse text-left text-sm">{children}</table>
+        </div>
+    ),
+    tbody: ({ children }) => <tbody className="divide-y divide-slate-800">{children}</tbody>,
+    td: ({ children }) => <td className="px-4 py-2 text-slate-300">{children}</td>,
+    th: ({ children }) => <th className="bg-slate-950 px-4 py-2 font-bold text-slate-200">{children}</th>,
+    thead: ({ children }) => <thead className="border-b border-slate-800">{children}</thead>,
+    ul: ({ children }) => <ul className="my-3 list-disc space-y-1 pl-6">{children}</ul>,
+};
 
 const MermaidDiagram = ({ code }) => {
     const reactId = useId();
@@ -93,11 +146,59 @@ const MermaidDiagram = ({ code }) => {
     );
 };
 
+const PreviewPanel = ({ markdown, isFullscreen, onToggleFullscreen }) => (
+    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+        <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            {isFullscreen ? 'Preview (fullscreen)' : 'Preview'}
+        </label>
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50">
+            <button
+                onClick={onToggleFullscreen}
+                className="absolute right-3 top-3 z-10 rounded-lg border border-slate-700 bg-slate-950/80 p-2 text-slate-400 shadow-lg backdrop-blur transition-colors hover:border-blue-500/50 hover:text-blue-400"
+                title={isFullscreen ? 'Exit fullscreen preview' : 'Fullscreen preview'}
+            >
+                {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+            </button>
+            <div className="markdown-preview h-full overflow-auto p-5 text-slate-300 scrollbar-thin">
+            {markdown.trim() ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                    {markdown}
+                </ReactMarkdown>
+            ) : (
+                <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                    Markdown preview will appear here...
+                </div>
+            )}
+            </div>
+        </div>
+    </div>
+);
+
 const MarkdownViewer = () => {
     const fileInputRef = useRef(null);
     const [markdown, setMarkdown] = useState(DEFAULT_MARKDOWN);
     const [copied, setCopied] = useState(false);
     const [fileName, setFileName] = useState('markdown-preview.md');
+    const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
+
+    useEffect(() => {
+        if (!isPreviewFullscreen) return undefined;
+
+        const originalOverflow = document.body.style.overflow;
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                setIsPreviewFullscreen(false);
+            }
+        };
+
+        document.body.style.overflow = 'hidden';
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.body.style.overflow = originalOverflow;
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isPreviewFullscreen]);
 
     const handleCopy = async () => {
         if (!markdown) return;
@@ -197,82 +298,30 @@ const MarkdownViewer = () => {
                 <div className="flex min-h-[320px] flex-col gap-2 overflow-hidden md:min-h-0">
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Editor</label>
                     <textarea
-                        className="h-full flex-1 resize-none rounded-xl border border-slate-800 bg-slate-900 p-4 font-mono text-sm text-slate-300 outline-none transition-all focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50"
                         value={markdown}
                         onChange={(event) => setMarkdown(event.target.value)}
-                        placeholder="Paste Markdown here..."
+                        className="min-h-0 flex-1 resize-none rounded-xl border border-slate-800 bg-slate-950 p-5 font-mono text-sm leading-6 text-slate-200 outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/10"
+                        spellCheck="false"
+                        placeholder="Type or import Markdown here..."
                     />
                 </div>
 
-                <div className="flex min-h-[320px] flex-col gap-2 overflow-hidden md:min-h-0">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Preview</label>
-                    <div className="markdown-preview h-full flex-1 overflow-auto rounded-xl border border-slate-800 bg-slate-900/50 p-5 text-slate-300 scrollbar-thin">
-                        {markdown.trim() ? (
-                            <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                                    a: ({ children, ...props }) => (
-                                        <a className="text-blue-400 underline decoration-blue-400/40 underline-offset-2 hover:text-blue-300" target="_blank" rel="noreferrer" {...props}>
-                                            {children}
-                                        </a>
-                                    ),
-                                    blockquote: ({ children }) => (
-                                        <blockquote className="border-l-4 border-blue-500/50 bg-slate-950/50 py-2 pl-4 text-slate-400">
-                                            {children}
-                                        </blockquote>
-                                    ),
-                                    code: ({ className, children, ...props }) => {
-                                        const match = /language-(\w+)/.exec(className || '');
-                                        const code = String(children).replace(/\n$/, '');
-                                        const isBlock = Boolean(className) || String(children).includes('\n');
-
-                                        if (isBlock && match?.[1]?.toLowerCase() === 'mermaid') {
-                                            return <MermaidDiagram code={code} />;
-                                        }
-
-                                        if (!isBlock) {
-                                            return (
-                                                <code className="rounded bg-slate-950 px-1.5 py-0.5 font-mono text-sm text-blue-300" {...props}>
-                                                    {children}
-                                                </code>
-                                            );
-                                        }
-
-                                        return (
-                                            <pre className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 text-sm text-slate-300">
-                                                <code className={className} {...props}>{children}</code>
-                                            </pre>
-                                        );
-                                    },
-                                    h1: ({ children }) => <h1 className="mb-4 border-b border-slate-800 pb-3 text-3xl font-bold text-white">{children}</h1>,
-                                    h2: ({ children }) => <h2 className="mb-3 mt-6 text-2xl font-bold text-slate-100">{children}</h2>,
-                                    h3: ({ children }) => <h3 className="mb-2 mt-5 text-xl font-semibold text-slate-100">{children}</h3>,
-                                    hr: () => <hr className="my-6 border-slate-800" />,
-                                    li: ({ children }) => <li className="my-1 pl-1">{children}</li>,
-                                    ol: ({ children }) => <ol className="my-3 list-decimal space-y-1 pl-6">{children}</ol>,
-                                    p: ({ children }) => <p className="my-3 leading-7 text-slate-300">{children}</p>,
-                                    table: ({ children }) => (
-                                        <div className="my-4 overflow-x-auto rounded-lg border border-slate-800">
-                                            <table className="w-full border-collapse text-left text-sm">{children}</table>
-                                        </div>
-                                    ),
-                                    tbody: ({ children }) => <tbody className="divide-y divide-slate-800">{children}</tbody>,
-                                    td: ({ children }) => <td className="px-4 py-2 text-slate-300">{children}</td>,
-                                    th: ({ children }) => <th className="bg-slate-950 px-4 py-2 font-bold text-slate-200">{children}</th>,
-                                    thead: ({ children }) => <thead className="border-b border-slate-800">{children}</thead>,
-                                    ul: ({ children }) => <ul className="my-3 list-disc space-y-1 pl-6">{children}</ul>,
-                                }}
-                            >
-                                {markdown}
-                            </ReactMarkdown>
-                        ) : (
-                            <div className="flex h-full items-center justify-center text-sm text-slate-500">
-                                Markdown preview will appear here...
-                            </div>
-                        )}
-                    </div>
-                </div>
+                <PreviewPanel
+                    markdown={markdown}
+                    isFullscreen={false}
+                    onToggleFullscreen={() => setIsPreviewFullscreen(true)}
+                />
             </div>
+
+            {isPreviewFullscreen && (
+                <div className="fixed inset-0 z-50 flex bg-slate-950 p-4 md:p-6">
+                    <PreviewPanel
+                        markdown={markdown}
+                        isFullscreen
+                        onToggleFullscreen={() => setIsPreviewFullscreen(false)}
+                    />
+                </div>
+            )}
         </div>
     );
 };
