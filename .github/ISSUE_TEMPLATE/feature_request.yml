@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest an improvement or new browser-based developer tool
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow or pain point should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe expected behavior and UI.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any existing tools, libraries, or different approaches?
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope notes
+      description: Should this run fully in-browser? Any security or privacy concerns?
