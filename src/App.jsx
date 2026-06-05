@@ -3,6 +3,7 @@ import {
   ArrowRightLeft,
   ShieldCheck,
   Clock,
+  Binary,
   Type,
   AlignLeft,
   KeyRound,
@@ -17,14 +18,12 @@ import {
   FileText
 } from 'lucide-react';
 
-// Layout components
 import { Sidebar, Header } from './layouts';
-
-// Feature components
 import {
   DebeziumDiff,
   JwtDebugger,
   EpochConverter,
+  NumberConverter,
   StringTools,
   TextAnalyzer,
   PasswordGenerator,
@@ -40,9 +39,6 @@ import {
   MarkdownViewer
 } from './features';
 
-/**
- * Navigation configuration
- */
 const MENU_GROUPS = [
   {
     label: 'Development',
@@ -78,6 +74,7 @@ const MENU_GROUPS = [
     label: 'Utilities',
     items: [
       { id: 'epoch', label: 'Epoch Converter', icon: Clock, keywords: ['epoch', 'timestamp', 'date', 'datetime', 'time', 'unix', 'milliseconds'] },
+      { id: 'number', label: 'Number Converter', icon: Binary, keywords: ['number', 'hex', 'decimal', 'binary', 'octal', 'convert'] },
       { id: 'string', label: 'Base64 / URL', icon: Type, keywords: ['base64', 'url', 'encode', 'decode', 'string', 'text'] },
       { id: 'textanalyzer', label: 'Text Analyzer', icon: AlignLeft, keywords: ['text', 'analyze', 'count', 'words', 'characters', 'lines', 'length'] },
       { id: 'crontab', label: 'Crontab Gen', icon: CalendarClock, keywords: ['cron', 'crontab', 'schedule', 'time', 'generator', 'timer'] },
@@ -86,14 +83,8 @@ const MENU_GROUPS = [
   }
 ];
 
-/**
- * Flattened navigation items for routes
- */
 const NAV_ITEMS = MENU_GROUPS.flatMap(group => group.items);
 
-/**
- * Feature component mapping
- */
 const CODE_TOOL_ROUTES = {
   javascript: '/codetools-js',
   css: '/codetools-css',
@@ -105,6 +96,7 @@ const FEATURE_COMPONENTS = {
   debezium: DebeziumDiff,
   jwt: JwtDebugger,
   epoch: EpochConverter,
+  number: NumberConverter,
   string: StringTools,
   textanalyzer: TextAnalyzer,
   password: PasswordGenerator,
@@ -124,12 +116,8 @@ const FEATURE_COMPONENTS = {
   'codetools-yaml': () => <CodeTools initialLanguage="yaml" languageRoutes={CODE_TOOL_ROUTES} />,
 };
 
-/**
- * Main Application Component
- */
 const App = () => {
   const location = useLocation();
-  // Extract feature ID from path (e.g., "/crontab" -> "crontab")
   const currentId = location.pathname.substring(1) || 'debezium';
   const activeNavItem = NAV_ITEMS.find(i => i.id === currentId) || NAV_ITEMS[0];
 
@@ -156,7 +144,6 @@ const App = () => {
                 );
               })}
 
-              {/* Fallback for unknown routes */}
               <Route path="*" element={<Navigate to="/debezium" replace />} />
             </Routes>
           </div>

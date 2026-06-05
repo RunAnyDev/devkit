@@ -389,12 +389,12 @@ const StringTools = () => {
 
                 {/* Input */}
                 <div className="flex flex-col gap-2 min-h-0">
-                    <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <div className="flex items-center justify-between gap-3 min-h-[34px]">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
                             <FileText size={11} />
                             {inputLabel}
                         </label>
-                        <span className="text-xs text-slate-600">{stats}</span>
+                        <span className="text-xs text-slate-600 text-right truncate min-w-0">{stats}</span>
                     </div>
                     <textarea
                         id="encode-input"
@@ -408,12 +408,12 @@ const StringTools = () => {
 
                 {/* Output */}
                 <div className="flex flex-col gap-2 min-h-0">
-                    <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <div className="flex items-center justify-between gap-3 min-h-[34px]">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
                             <FileText size={11} />
                             {outputLabel}
                         </label>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 shrink-0">
                             {output && !computeError && (
                                 <span className="text-xs text-slate-600">{output.length} ký tự</span>
                             )}

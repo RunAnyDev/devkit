@@ -14,3 +14,4 @@ export { default as CodeTools } from './CodeTools';
 export { default as JsonKeyDiff } from './JsonKeyDiff';
 export { default as DataTablePreview } from './DataTablePreview';
 export { default as MarkdownViewer } from './MarkdownViewer';
+export { default as NumberConverter } from './NumberConverter';
