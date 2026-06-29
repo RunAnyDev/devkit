@@ -13,7 +13,7 @@
     "clean-css": "^5.3.3",
     "cronstrue": "^3.11.0",
     "js-beautify": "^1.15.4",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^4.2.0",
     "lucide-react": "^0.460.0",
     "mermaid": "^11.15.0",
     "papaparse": "^5.5.3",
