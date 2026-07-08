@@ -23,9 +23,14 @@ import { Button, Card } from '../components/ui';
 //
 // ENCODE (latinToT9):
 //  - Lowercases input. Each letter becomes the key digit repeated by its
-//    position. Spaces become '0'. Other characters are dropped.
+//    position. Spaces become '0'. Contiguous digit clusters are passed through
+//    verbatim (mirrors the decoder's number-mode).
 //  - Convention: always space-separate letter groups (canonical Nokia-style),
 //    so output is round-trip-safe and visually grouped.
+//  - Other characters (punctuation, ...) are dropped.
+//  - Note: a standalone '0' digit in input becomes '0' on the wire; the
+//    decoder always interprets '0' as space, so a literal zero round-trips
+//    as space (no syntax to encode a bare zero digit in T9).
 //
 const T9_KEYS = {
   '2': 'abc',
@@ -107,14 +112,25 @@ export const t9ToLatin = (input) => {
 export const latinToT9 = (input) => {
   const text = String(input ?? '').toLowerCase();
   const parts = [];
-  for (const ch of text) {
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i];
     if (ch === ' ') {
       parts.push('0');
-      continue;
+      i++;
+    } else if (ch >= '0' && ch <= '9') {
+      // Contiguous digit cluster -> pass through verbatim (mirrors decoder
+      // number-mode). E.g. '2024' -> '2024', '00' -> '00'.
+      let j = i;
+      while (j < text.length && text[j] >= '0' && text[j] <= '9') j++;
+      parts.push(text.slice(i, j));
+      i = j;
+    } else if (T9_REVERSE[ch]) {
+      parts.push(T9_REVERSE[ch].digit.repeat(T9_REVERSE[ch].count));
+      i++;
+    } else {
+      i++; // skip unknown (punctuation etc.)
     }
-    const info = T9_REVERSE[ch];
-    if (!info) continue;
-    parts.push(info.digit.repeat(info.count));
   }
   return parts.join(' ');
 };
@@ -150,7 +166,7 @@ const T9Converter = () => {
   const [latin, setLatin] = useState('em');
 
   const t9Invalid = /[^0-9\s]/.test(t9);
-  const latinInvalid = /[^a-z\s]/.test(latin.toLowerCase());
+  const latinInvalid = /[^a-z0-9\s]/.test(latin.toLowerCase());
 
   const decoded = useMemo(() => (t9Invalid || !t9.trim() ? '' : t9ToLatin(t9)), [t9, t9Invalid]);
   const encoded = useMemo(() => (latinInvalid || !latin ? '' : latinToT9(latin)), [latin, latinInvalid]);
@@ -176,7 +192,7 @@ const T9Converter = () => {
               preview={encoded}
               previewLabel="Encode (Latin → T9)"
               invalid={latinInvalid}
-              invalidMsg="Chỉ chấp nhận chữ cái a-z và khoảng trắng."
+              invalidMsg="Chỉ chấp nhận chữ cái a-z, chữ số 0-9 và khoảng trắng."
             />
           </div>
 
@@ -364,9 +380,9 @@ const LatinPanel = ({ value, onChange, preview, previewLabel, invalid, invalidMs
       />
       {/* Encode cheat-sheet */}
       <div className="rounded-xl bg-slate-900/70 border border-slate-700/70 p-3 text-xs text-slate-500 leading-relaxed">
-        Gõ <span className="font-mono text-slate-300">a-z</span> và dấu cách; ký tự khác sẽ bị bỏ qua.
-        Mỗi chữ cái được tách bằng khoảng trắng (canonical Nokia-style),
-        ví dụ <span className="font-mono text-slate-300">hello</span> → <span className="font-mono text-blue-300">44 33 555 555 666</span>.
+        Gõ <span className="font-mono text-slate-300">a-z</span>, <span className="font-mono text-slate-300">0-9</span> và dấu cách; ký tự khác bị bỏ qua.
+        Chữ cái tách bằng khoảng trắng; cụm số giữ nguyên,
+        ví dụ <span className="font-mono text-slate-300">hello 2024</span> → <span className="font-mono text-blue-300">44 33 555 555 666 0 2024</span>.
       </div>
     </div>
   );
