@@ -148,13 +148,13 @@ const KEYPAD_ROWS = [
 
 // Each example carries both directions so a single click can populate either side.
 const EXAMPLES = [
-  { label: 'em',       latin: 'em',       digits: '33 6',                  note: 'ví dụ trong đề bài' },
-  { label: 'hello',    latin: 'hello',    digits: '44 33 555 555 666',     note: 'Nokia cổ điển' },
-  { label: 'abc',      latin: 'abc',      digits: '2 22 222',              note: 'lần lượt phím 2' },
-  { label: 'hi ok',    latin: 'hi ok',    digits: '44 444 0 666 5',        note: 'space dùng `0` (đứng riêng)' },
-  { label: 'can',      latin: 'can',      digits: '222266',                note: 'không quay vòng: 2222 -> ca, +66 -> n' },
-  { label: '2024',     latin: '2024',     digits: '2024',                  note: 'cụm có `0` -> giữ nguyên số' },
-  { label: 'mot ngay', latin: 'mot ngay', digits: '6 666 8 0 66 4 2 999',  note: 'chuỗi có dấu cách' },
+  { label: 'em',       latin: 'em',       digits: '33 6',                  note: 'example from the prompt' },
+  { label: 'hello',    latin: 'hello',    digits: '44 33 555 555 666',     note: 'classic Nokia' },
+  { label: 'abc',      latin: 'abc',      digits: '2 22 222',              note: 'press 2 repeatedly' },
+  { label: 'hi ok',    latin: 'hi ok',    digits: '44 444 0 666 5',        note: 'space uses `0` (alone)' },
+  { label: 'can',      latin: 'can',      digits: '222266',                note: 'no wrap: 2222 -> ca, +66 -> n' },
+  { label: '2024',     latin: '2024',     digits: '2024',                  note: 'cluster with `0` -> kept as number' },
+  { label: 'mot ngay', latin: 'mot ngay', digits: '6 666 8 0 66 4 2 999',  note: 'string with spaces' },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -183,7 +183,7 @@ const T9Converter = () => {
               preview={decoded}
               previewLabel="Decode (T9 → Latin)"
               invalid={t9Invalid}
-              invalidMsg="Chỉ chấp nhận chữ số 0-9 và khoảng trắng."
+              invalidMsg="Only digits 0-9 and whitespace are accepted."
               showKeypad
             />
             <LatinPanel
@@ -192,7 +192,7 @@ const T9Converter = () => {
               preview={encoded}
               previewLabel="Encode (Latin → T9)"
               invalid={latinInvalid}
-              invalidMsg="Chỉ chấp nhận chữ cái a-z, chữ số 0-9 và khoảng trắng."
+              invalidMsg="Only letters a-z, digits 0-9, and whitespace are accepted."
             />
           </div>
 
@@ -235,7 +235,7 @@ const PanelShell = ({
             icon={copied ? Check : Copy}
             className="px-2 py-1"
           >
-            {copied ? 'Đã copy' : 'Copy'}
+            {copied ? 'Copied' : 'Copy'}
           </Button>
         )}
         {onClear && (
@@ -246,7 +246,7 @@ const PanelShell = ({
             icon={Trash2}
             className="px-2 py-1"
           >
-            Xóa
+            Clear
           </Button>
         )}
       </div>
@@ -310,16 +310,16 @@ const DigitPanel = ({ value, onChange, preview, previewLabel, invalid, invalidMs
   return (
     <div className="flex flex-col gap-3 min-w-0">
       <PanelShell
-        label="Chuỗi phím T9"
+        label="T9 key sequence"
         icon={Hash}
         value={value}
         onChange={onChange}
-        placeholder="Ví dụ: 33 6  hoặc  4433555 555666"
+        placeholder="Example: 33 6  or  4433555 555666"
         preview={preview}
         previewLabel={previewLabel}
         invalid={invalid}
         invalidMsg={invalidMsg}
-        charCount={`${value.length} ký tự`}
+        charCount={`${value.length} chars`}
         onCopy={handleCopy}
         onClear={() => onChange('')}
         copied={copied}
@@ -333,10 +333,10 @@ const DigitPanel = ({ value, onChange, preview, previewLabel, invalid, invalidMs
       )}
       {/* Decode cheat-sheet */}
       <div className="rounded-xl bg-slate-900/70 border border-slate-700/70 p-3 text-[11px] text-slate-500 leading-relaxed">
-        <div><span className="font-mono text-slate-300">0</span> đứng riêng (một mình) → space.</div>
-        <div>Cụm chữ số có chứa <span className="font-mono text-slate-300">0</span> và dài hơn 1 ký tự → giữ nguyên số
-          (vd <span className="font-mono text-slate-300">2024</span> → <span className="font-mono text-blue-300">2024</span>).</div>
-        <div>Cụm không có <span className="font-mono text-slate-300">0</span> → decode T9 multi-tap.</div>
+        <div><span className="font-mono text-slate-300">0</span> alone (by itself) -> space.</div>
+        <div>A digit cluster containing <span className="font-mono text-slate-300">0</span> and longer than 1 character -> kept as a number
+          (e.g. <span className="font-mono text-slate-300">2024</span> -> <span className="font-mono text-blue-300">2024</span>).</div>
+        <div>Cluster without <span className="font-mono text-slate-300">0</span> -> T9 multi-tap decode.</div>
       </div>
     </div>
   );
@@ -364,25 +364,25 @@ const LatinPanel = ({ value, onChange, preview, previewLabel, invalid, invalidMs
   return (
     <div className="flex flex-col gap-3 min-w-0">
       <PanelShell
-        label="Chuỗi Latin"
+        label="Latin string"
         icon={Type}
         value={value}
         onChange={onChange}
-        placeholder="Ví dụ: em  hoặc  hello"
+        placeholder="Example: em  or  hello"
         preview={preview}
         previewLabel={previewLabel}
         invalid={invalid}
         invalidMsg={invalidMsg}
-        charCount={`${value.length} ký tự`}
+        charCount={`${value.length} chars`}
         onCopy={handleCopy}
         onClear={() => onChange('')}
         copied={copied}
       />
       {/* Encode cheat-sheet */}
       <div className="rounded-xl bg-slate-900/70 border border-slate-700/70 p-3 text-xs text-slate-500 leading-relaxed">
-        Gõ <span className="font-mono text-slate-300">a-z</span>, <span className="font-mono text-slate-300">0-9</span> và dấu cách; ký tự khác bị bỏ qua.
-        Chữ cái tách bằng khoảng trắng; cụm số giữ nguyên,
-        ví dụ <span className="font-mono text-slate-300">hello 2024</span> → <span className="font-mono text-blue-300">44 33 555 555 666 0 2024</span>.
+        Type <span className="font-mono text-slate-300">a-z</span>, <span className="font-mono text-slate-300">0-9</span> and whitespace; other characters are dropped.
+        Letters are space-separated; number clusters pass through,
+        e.g. <span className="font-mono text-slate-300">hello 2024</span> -> <span className="font-mono text-blue-300">44 33 555 555 666 0 2024</span>.
       </div>
     </div>
   );
@@ -392,7 +392,7 @@ const Keypad = ({ onKey, onSpace, onBackspace }) => (
   <div className="flex flex-col gap-2">
     <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
       <Keyboard size={11} />
-      Bàn phím ảo
+      Virtual keypad
     </label>
     <div className="rounded-xl bg-slate-900/70 border border-slate-700/70 p-3">
       <div className="grid grid-cols-3 gap-1.5 max-w-[200px] mx-auto">
@@ -421,14 +421,14 @@ const Keypad = ({ onKey, onSpace, onBackspace }) => (
           className="px-2 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-medium flex items-center justify-center gap-1 transition-colors"
         >
           <Space size={11} />
-          Tách nhóm
+          Split group
         </button>
         <button
           type="button"
           onClick={onBackspace}
           className="px-2 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-medium transition-colors"
         >
-          ⌫ Xóa 1 ký tự
+          ⌫ Delete 1 char
         </button>
       </div>
     </div>
@@ -438,7 +438,7 @@ const Keypad = ({ onKey, onSpace, onBackspace }) => (
 const KeyMap = () => (
   <div className="flex flex-col gap-2">
     <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-      Bảng phím
+      Key map
     </p>
     <div className="grid grid-cols-4 gap-2">
       {Object.entries(T9_KEYS).map(([digit, letters]) => (
@@ -456,7 +456,7 @@ const KeyMap = () => (
       ))}
       <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 col-span-4">
         <span className="font-mono text-base font-bold text-slate-200 w-5 text-center">0</span>
-        <span className="font-mono text-xs text-slate-400">dấu cách (space)</span>
+        <span className="font-mono text-xs text-slate-400">space character</span>
       </div>
     </div>
   </div>
@@ -466,7 +466,7 @@ const Examples = ({ onPickT9, onPickLatin }) => (
   <div className="flex flex-col gap-2">
     <p className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
       <Lightbulb size={11} />
-      Ví dụ nhanh
+      Quick examples
     </p>
     <div className="flex flex-col gap-2">
       {EXAMPLES.map((ex) => (
@@ -481,7 +481,7 @@ const Examples = ({ onPickT9, onPickLatin }) => (
           <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
-              title={`Nạp "${ex.latin}" vào ô Latin`}
+              title={`Load "${ex.latin}" into Latin box`}
               onClick={() => onPickLatin(ex.latin)}
               className="px-2 py-1 rounded text-[10px] font-mono bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
             >
@@ -489,7 +489,7 @@ const Examples = ({ onPickT9, onPickLatin }) => (
             </button>
             <button
               type="button"
-              title={`Nạp "${ex.digits}" vào ô T9`}
+              title={`Load "${ex.digits}" into T9 box`}
               onClick={() => onPickT9(ex.digits)}
               className="px-2 py-1 rounded text-[10px] font-mono bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
             >

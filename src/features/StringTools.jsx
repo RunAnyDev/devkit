@@ -85,10 +85,10 @@ const decodeUnicode = (str) => {
     return str.replace(/\\[Uu]([0-9a-fA-F]{4,8})/g, (_, h) => String.fromCodePoint(parseInt(h, 16)));
 };
 
-const encodeJwt = (str) => { throw new Error('JWT encode không áp dụng, dùng JWT Debugger'); };
+const encodeJwt = (str) => { throw new Error('JWT encode is not supported, use JWT Debugger'); };
 const decodeJwt = (str) => {
     const parts = str.trim().split('.');
-    if (parts.length !== 3) throw new Error('JWT không hợp lệ, cần 3 phần ngăn cách bởi dấu chấm');
+    if (parts.length !== 3) throw new Error('Invalid JWT, expected 3 parts separated by dots');
     const decode = p => {
         let s = p.replace(/-/g, '+').replace(/_/g, '/');
         while (s.length % 4) s += '=';
@@ -104,7 +104,7 @@ const CODECS = [
         id: 'base64',
         label: 'Base64',
         color: 'blue',
-        description: 'Encode/Decode chuỗi text sang Base64 (hỗ trợ Unicode)',
+        description: 'Encode/Decode text to Base64 (Unicode supported)',
         encode: encodeBase64,
         decode: decodeBase64,
     },
@@ -112,7 +112,7 @@ const CODECS = [
         id: 'base64url',
         label: 'Base64 URL Safe',
         color: 'indigo',
-        description: 'Base64 biến thể an toàn cho URL (thay +/ bằng -_)',
+        description: 'URL-safe Base64 variant (replaces +/ with -_)',
         encode: encodeBase64Safe,
         decode: decodeBase64Safe,
     },
@@ -120,7 +120,7 @@ const CODECS = [
         id: 'url',
         label: 'URL Encode',
         color: 'violet',
-        description: 'Encode ký tự đặc biệt cho query string (encodeURIComponent)',
+        description: 'Encode special characters for query string (encodeURIComponent)',
         encode: encodeUrl,
         decode: decodeUrl,
     },
@@ -128,7 +128,7 @@ const CODECS = [
         id: 'urlfull',
         label: 'URL Full Encode',
         color: 'purple',
-        description: 'Encode toàn bộ ký tự thành %XX (kể cả ASCII)',
+        description: 'Encode every character as %XX (including ASCII)',
         encode: encodeUrlFull,
         decode: decodeUrl,
     },
@@ -136,7 +136,7 @@ const CODECS = [
         id: 'html',
         label: 'HTML Entities',
         color: 'amber',
-        description: 'Chuyển đổi &, <, >, ", \' thành HTML entities',
+        description: 'Convert &, <, >, \", \' to HTML entities',
         encode: encodeHtml,
         decode: decodeHtml,
     },
@@ -144,7 +144,7 @@ const CODECS = [
         id: 'hex',
         label: 'Hex',
         color: 'green',
-        description: 'Encode bytes thành chuỗi hexadecimal',
+        description: 'Encode bytes as a hexadecimal string',
         encode: encodeHex,
         decode: decodeHex,
     },
@@ -152,7 +152,7 @@ const CODECS = [
         id: 'binary',
         label: 'Binary',
         color: 'teal',
-        description: 'Chuyển text thành chuỗi nhị phân 0/1',
+        description: 'Convert text to a 0/1 binary string',
         encode: encodeBinary,
         decode: decodeBinary,
     },
@@ -160,7 +160,7 @@ const CODECS = [
         id: 'unicode',
         label: 'Unicode Escape',
         color: 'cyan',
-        description: 'Chuyển ký tự thành \\uXXXX hoặc \\UXXXXXXXX',
+        description: 'Convert characters to \\uXXXX or \\UXXXXXXXX',
         encode: encodeUnicode,
         decode: decodeUnicode,
     },
@@ -168,7 +168,7 @@ const CODECS = [
         id: 'jwt',
         label: 'JWT Decode',
         color: 'rose',
-        description: 'Giải mã JWT payload (không verify signature)',
+        description: 'Decode JWT payload (signature not verified)',
         encode: null,
         decode: decodeJwt,
     },
@@ -272,10 +272,10 @@ const StringTools = () => {
     if (input) {
         try {
             if (direction === 'encode') {
-                if (!codec.encode) throw new Error(`${codec.label} không hỗ trợ encode`);
+                if (!codec.encode) throw new Error(`${codec.label} does not support encode`);
                 output = codec.encode(input);
             } else {
-                if (!codec.decode) throw new Error(`${codec.label} không hỗ trợ decode`);
+                if (!codec.decode) throw new Error(`${codec.label} does not support decode`);
                 output = codec.decode(input);
             }
         } catch (e) {
@@ -314,8 +314,8 @@ const StringTools = () => {
     const outputColor = computeError ? 'text-red-400' : colors.text;
 
     const stats = input
-        ? `${input.length} ký tự · ${new TextEncoder().encode(input).length} bytes`
-        : 'Chưa có input';
+        ? `${input.length} chars · ${new TextEncoder().encode(input).length} bytes`
+        : 'No input yet';
 
     return (
         <div className="flex flex-col gap-5 h-full">
@@ -349,7 +349,7 @@ const StringTools = () => {
                     <button
                         id="upload-file-btn"
                         onClick={() => fileRef.current?.click()}
-                        title="Tải file text"
+                        title="Load text file"
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
                     >
                         <Upload size={13} /> File
@@ -367,7 +367,7 @@ const StringTools = () => {
                         id="clear-btn"
                         onClick={handleClear}
                         disabled={!input}
-                        title="Xoá input"
+                        title="Clear input"
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
                         <Trash2 size={13} /> Clear
@@ -402,7 +402,7 @@ const StringTools = () => {
                         className={`flex-1 bg-slate-900 border rounded-xl p-4 font-mono text-sm text-slate-200 outline-none resize-none transition-all placeholder-slate-600 focus:border-slate-500 border-slate-700`}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder={`Nhập ${inputLabel.toLowerCase()} tại đây...`}
+                        placeholder={`Enter ${inputLabel.toLowerCase()} here...`}
                     />
                 </div>
 
@@ -415,7 +415,7 @@ const StringTools = () => {
                         </label>
                         <div className="flex items-center gap-1 shrink-0">
                             {output && !computeError && (
-                                <span className="text-xs text-slate-600">{output.length} ký tự</span>
+                                <span className="text-xs text-slate-600">{output.length} chars</span>
                             )}
                             <CopyButton text={computeError ? '' : output} />
                         </div>
@@ -426,7 +426,7 @@ const StringTools = () => {
                         spellCheck={false}
                         className={`flex-1 bg-slate-800/60 border border-slate-700 rounded-xl p-4 font-mono text-sm outline-none resize-none ${outputColor} ${computeError ? 'border-red-800/50 bg-red-950/20' : ''}`}
                         value={computeError ? `⚠ ${computeError}` : output}
-                        placeholder="Kết quả sẽ hiển thị ở đây..."
+                        placeholder="Result will appear here..."
                     />
                 </div>
             </div>
@@ -494,7 +494,7 @@ const QuickRef = ({ codecId }) => {
 
     return (
         <div className="flex flex-col gap-2 shrink-0">
-            <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">Ví dụ nhanh</p>
+            <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">Quick examples</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {refs.map((r, i) => (
                     <div

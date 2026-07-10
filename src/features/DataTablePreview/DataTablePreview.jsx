@@ -102,8 +102,8 @@ const DataTablePreview = () => {
   const handlePasteChange = (e) => {
     const value = e.target.value;
     setRawInput(value);
-    // Không auto-parse, chỉ lưu raw text
-    // User phải nhấn nút Parse hoặc Ctrl+Enter
+    // Do not auto-parse; just store raw text
+    // User must click Parse or press Ctrl+Enter
   };
 
   const handlePasteKeyDown = (e) => {
@@ -120,7 +120,7 @@ const DataTablePreview = () => {
   const handleDelimiterChange = (e) => {
     const newDelimiter = e.target.value;
     setDelimiter(newDelimiter);
-    // Nếu đã có data, re-parse với delimiter mới
+    // If data already exists, re-parse with the new delimiter
     if (data.length > 0 && activeTab === 'paste' && rawInput) {
       parseData(rawInput, newDelimiter);
     }
