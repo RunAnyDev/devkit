@@ -16,7 +16,8 @@ import {
   Code,
   Braces,
   Table,
-  FileText
+  FileText,
+  GitCompare
 } from 'lucide-react';
 
 import { Sidebar, Header } from './layouts';
@@ -38,7 +39,8 @@ import {
   CodeTools,
   JsonKeyDiff,
   DataTablePreview,
-  MarkdownViewer
+  MarkdownViewer,
+  TextDiff
 } from './features';
 
 const MENU_GROUPS = [
@@ -80,6 +82,7 @@ const MENU_GROUPS = [
       { id: 't9', label: 'T9 Decoder', icon: Phone, keywords: ['t9', 'phone', 'keypad', 'sms', 'multi-tap', 'mobile', 'decode'] },
       { id: 'string', label: 'Base64 / URL', icon: Type, keywords: ['base64', 'url', 'encode', 'decode', 'string', 'text'] },
       { id: 'textanalyzer', label: 'Text Analyzer', icon: AlignLeft, keywords: ['text', 'analyze', 'count', 'words', 'characters', 'lines', 'length'] },
+      { id: 'textdiff', label: 'Text Diff', icon: GitCompare, keywords: ['text', 'diff', 'compare', 'line', 'word', 'unified', 'side-by-side'] },
       { id: 'crontab', label: 'Crontab Gen', icon: CalendarClock, keywords: ['cron', 'crontab', 'schedule', 'time', 'generator', 'timer'] },
       { id: 'datatable', label: 'Data Table View', icon: Table, keywords: ['csv', 'tsv', 'table', 'data', 'preview', 'excel', 'spreadsheet'] },
     ]
@@ -113,6 +116,7 @@ const FEATURE_COMPONENTS = {
   jsonbeautifier: JsonBeautifier,
   markdown: MarkdownViewer,
   jsonkeydiff: JsonKeyDiff,
+  textdiff: TextDiff,
   datatable: DataTablePreview,
   'codetools-js': () => <CodeTools initialLanguage="javascript" languageRoutes={CODE_TOOL_ROUTES} />,
   'codetools-css': () => <CodeTools initialLanguage="css" languageRoutes={CODE_TOOL_ROUTES} />,
