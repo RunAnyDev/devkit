@@ -3,7 +3,6 @@ import {
     FileText,
     ArrowLeftRight,
     Trash2,
-    Upload,
     AlertTriangle,
     Columns2,
     AlignLeft,
@@ -15,9 +14,6 @@ import {
 import { Card } from '../../components/ui';
 import { computeAlignedDiff, computeStats, hasChanges } from './diffUtils';
 import DiffView from './DiffView';
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const FILE_ACCEPT = '.txt,.log,.md,.json,.xml,.yaml,.yml,.csv,.tsv,.ini,.conf,.env,.js,.ts,.tsx,.jsx,.css,.html,.py,.go,.rs,text/*';
 
 const ToggleChip = ({ label, icon: Icon, checked, onChange, title }) => (
     <label
@@ -43,13 +39,11 @@ const TextDiff = () => {
     const [ignoreCase, setIgnoreCase] = useState(false);
     const [syncScroll, setSyncScroll] = useState(true);
     const [showLineNumbers, setShowLineNumbers] = useState(true);
-    const [uploadTarget, setUploadTarget] = useState('left'); // 'left' | 'right'
     const [error, setError] = useState(null);
     const [aligned, setAligned] = useState(null);
 
     const leftInputRef = useRef(null);
     const rightInputRef = useRef(null);
-    const fileInputRef = useRef(null);
     const syncingRef = useRef(false);
 
     // Auto-compute diff whenever inputs or compare options change.
@@ -107,61 +101,13 @@ const TextDiff = () => {
         setError(null);
     };
 
-    const handleFile = (e) => {
-        const file = e.target.files?.[0];
-        e.target.value = '';
-        if (!file) return;
-        if (file.size > MAX_FILE_SIZE) {
-            setError(`File too large (max 5MB): ${file.name}`);
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => {
-            const text = typeof reader.result === 'string' ? reader.result : '';
-            if (uploadTarget === 'left') setLeftInput(text);
-            else setRightInput(text);
-        };
-        reader.onerror = () => setError(`Failed to read: ${file.name}`);
-        reader.readAsText(file, 'UTF-8');
-    };
-
     return (
         <div className="h-full flex flex-col gap-4">
-            <input
-                ref={fileInputRef}
-                type="file"
-                hidden
-                onChange={handleFile}
-                accept={FILE_ACCEPT}
-            />
-
             {/* Toolbar */}
             <div className="flex flex-wrap items-center gap-2.5 bg-slate-800 p-3 rounded-lg border border-slate-700 shrink-0">
                 <div className="flex items-center gap-2 text-slate-300 font-medium pr-1">
                     <FileText size={18} />
                     <span>Text Diff</span>
-                </div>
-
-                <div className="h-6 w-px bg-slate-700" />
-
-                {/* File upload group */}
-                <div className="flex items-center gap-1.5">
-                    <select
-                        value={uploadTarget}
-                        onChange={(e) => setUploadTarget(e.target.value)}
-                        title="Which panel the file uploads to"
-                        className="bg-slate-700 border border-slate-600 text-slate-200 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer"
-                    >
-                        <option value="left">Left</option>
-                        <option value="right">Right</option>
-                    </select>
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        title="Load text file"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-all"
-                    >
-                        <Upload size={13} /> File
-                    </button>
                 </div>
 
                 <div className="h-6 w-px bg-slate-700" />
