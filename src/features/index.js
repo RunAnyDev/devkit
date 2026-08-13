@@ -17,3 +17,4 @@ export { default as DataTablePreview } from './DataTablePreview';
 export { default as MarkdownViewer } from './MarkdownViewer';
 export { default as NumberConverter } from './NumberConverter';
 export { default as T9Converter } from './T9Converter';
+export { default as MorseConverter } from './MorseConverter';

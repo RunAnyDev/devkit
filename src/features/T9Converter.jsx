@@ -333,10 +333,10 @@ const DigitPanel = ({ value, onChange, preview, previewLabel, invalid, invalidMs
       )}
       {/* Decode cheat-sheet */}
       <div className="rounded-xl bg-slate-900/70 border border-slate-700/70 p-3 text-[11px] text-slate-500 leading-relaxed">
-        <div><span className="font-mono text-slate-300">0</span> alone (by itself) -> space.</div>
-        <div>A digit cluster containing <span className="font-mono text-slate-300">0</span> and longer than 1 character -> kept as a number
-          (e.g. <span className="font-mono text-slate-300">2024</span> -> <span className="font-mono text-blue-300">2024</span>).</div>
-        <div>Cluster without <span className="font-mono text-slate-300">0</span> -> T9 multi-tap decode.</div>
+        <div><span className="font-mono text-slate-300">0</span> alone (by itself) -&gt; space.</div>
+        <div>A digit cluster containing <span className="font-mono text-slate-300">0</span> and longer than 1 character -&gt; kept as a number
+          (e.g. <span className="font-mono text-slate-300">2024</span> -&gt; <span className="font-mono text-blue-300">2024</span>).</div>
+        <div>Cluster without <span className="font-mono text-slate-300">0</span> -&gt; T9 multi-tap decode.</div>
       </div>
     </div>
   );
@@ -382,7 +382,7 @@ const LatinPanel = ({ value, onChange, preview, previewLabel, invalid, invalidMs
       <div className="rounded-xl bg-slate-900/70 border border-slate-700/70 p-3 text-xs text-slate-500 leading-relaxed">
         Type <span className="font-mono text-slate-300">a-z</span>, <span className="font-mono text-slate-300">0-9</span> and whitespace; other characters are dropped.
         Letters are space-separated; number clusters pass through,
-        e.g. <span className="font-mono text-slate-300">hello 2024</span> -> <span className="font-mono text-blue-300">44 33 555 555 666 0 2024</span>.
+        e.g. <span className="font-mono text-slate-300">hello 2024</span> -&gt; <span className="font-mono text-blue-300">44 33 555 555 666 0 2024</span>.
       </div>
     </div>
   );

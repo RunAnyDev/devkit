@@ -23,6 +23,9 @@ A sleek collection of developer tools built with React + Vite. Runs entirely in-
 | **JSON Beautifier** | Format and parse JSON payloads |
 | **Markdown Viewer** | Edit and preview Markdown with GFM tables, task lists, and Mermaid diagrams |
 | **Code Beautifier/Minifier** | Format and minify JS, CSS, HTML, and YAML code |
+| **Number Converter** | Convert between decimal, hex, octal, and binary (supports BigInt) |
+| **T9 Decoder** | Decode and encode T9 phone keypad sequences (multi-tap) |
+| **Morse Code** | Translate text ↔ Morse, play the audio signal, and watch each dit/dah on a timing diagram |
 
 ## Quick Start
 
