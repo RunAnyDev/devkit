@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  Copy, Check, Trash2, Keyboard, Hash, Type, Space, AlertCircle, Lightbulb, ArrowRight
+  Copy, Check, Trash2, Keyboard, Hash, Type, Space, Lightbulb, ArrowRight, ArrowLeftRight
 } from 'lucide-react';
 import { Button, Card } from '../components/ui';
 
@@ -158,51 +158,75 @@ const EXAMPLES = [
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
-
+//
+// Single unified panel with a mode toggle:
+//   - 't9'    mode: input is a T9 key sequence, preview decodes to Latin.
+//   - 'latin' mode: input is a Latin string, preview encodes to T9.
+// The "Swap" button converts the current value to the other form and toggles
+// the mode in one click — same pattern as the Morse converter.
 const T9Converter = () => {
-  // Two independent state vars. Each side owns its own input; the other side
-  // shows the live conversion as a read-only preview. No circular updates.
-  const [t9, setT9] = useState('33 6');
-  const [latin, setLatin] = useState('em');
+  const [mode, setMode] = useState('t9'); // 't9' | 'latin'
+  const [value, setValue] = useState('33 6');
 
-  const t9Invalid = /[^0-9\s]/.test(t9);
-  const latinInvalid = /[^a-z0-9\s]/.test(latin.toLowerCase());
+  const isT9Mode = mode === 't9';
+  const t9Invalid = /[^0-9\s]/.test(value);
+  const latinInvalid = /[^a-z0-9\s]/.test(value.toLowerCase());
+  const invalid = isT9Mode ? t9Invalid : latinInvalid;
+  const invalidMsg = isT9Mode
+    ? 'Only digits 0-9 and whitespace are accepted.'
+    : 'Only letters a-z, digits 0-9, and whitespace are accepted.';
 
-  const decoded = useMemo(() => (t9Invalid || !t9.trim() ? '' : t9ToLatin(t9)), [t9, t9Invalid]);
-  const encoded = useMemo(() => (latinInvalid || !latin ? '' : latinToT9(latin)), [latin, latinInvalid]);
+  const preview = useMemo(() => {
+    if (invalid || !value.trim()) return '';
+    return isT9Mode ? t9ToLatin(value) : latinToT9(value);
+  }, [value, invalid, isT9Mode]);
+
+  // Swap: if we have a clean preview, move it into the input box and flip
+  // the mode. If the input is invalid/empty, we still flip the mode but
+  // leave the value alone so the user doesn't lose their typing.
+  const handleSwap = () => {
+    if (preview) setValue(preview);
+    setMode(m => (m === 't9' ? 'latin' : 't9'));
+  };
+
+  // Loading an example also jumps to the matching mode, so the preview
+  // reflects the example immediately without an extra click.
+  const handlePickExample = (kind, digits, latin) => {
+    if (kind === 't9') {
+      setMode('t9');
+      setValue(digits);
+    } else {
+      setMode('latin');
+      setValue(latin);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto h-full overflow-y-auto pr-2">
       <Card title="T9 Phone Keypad ↔ Latin">
         <div className="flex flex-col gap-5">
-          {/* ── Bidirectional panels ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <DigitPanel
-              value={t9}
-              onChange={setT9}
-              preview={decoded}
-              previewLabel="Decode (T9 → Latin)"
-              invalid={t9Invalid}
-              invalidMsg="Only digits 0-9 and whitespace are accepted."
-              showKeypad
-            />
-            <LatinPanel
-              value={latin}
-              onChange={setLatin}
-              preview={encoded}
-              previewLabel="Encode (Latin → T9)"
-              invalid={latinInvalid}
-              invalidMsg="Only letters a-z, digits 0-9, and whitespace are accepted."
-            />
-          </div>
+          {/* ── Unified input with mode-aware label, preview, and Swap ── */}
+          <UnifiedPanel
+            mode={mode}
+            value={value}
+            onChange={setValue}
+            onSwap={handleSwap}
+            invalid={invalid}
+            invalidMsg={invalidMsg}
+            preview={preview}
+            previewLabel={isT9Mode ? 'Decode (T9 → Latin)' : 'Encode (Latin → T9)'}
+          />
+
+          {/* ── Mode-specific helpers ── */}
+          {isT9Mode ? (
+            <Keypad value={value} onChange={setValue} />
+          ) : null}
+          <CheatSheet mode={mode} />
 
           {/* ── Reference + examples ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <KeyMap />
-            <Examples
-              onPickT9={setT9}
-              onPickLatin={setLatin}
-            />
+            <Examples onPick={handlePickExample} />
           </div>
         </div>
       </Card>
@@ -212,228 +236,181 @@ const T9Converter = () => {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-const PanelShell = ({
-  label, icon: Icon, value, onChange, placeholder,
-  preview, previewLabel, invalid, invalidMsg,
-  charCount,
-  onCopy, onClear, copied,
-}) => (
-  <div className="flex flex-col gap-2 min-w-0">
-    {/* Header row */}
-    <div className="flex items-center justify-between gap-3 min-h-[34px]">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
-        <Icon size={11} />
-        {label}
-      </label>
-      <div className="flex items-center gap-1 shrink-0">
-        <span className="text-xs text-slate-600">{charCount}</span>
-        {onCopy && (
+const UnifiedPanel = ({
+  mode, value, onChange, onSwap,
+  invalid, invalidMsg, preview, previewLabel,
+}) => {
+  const [copied, setCopied] = useState(false);
+  const isT9Mode = mode === 't9';
+  const Icon = isT9Mode ? Hash : Type;
+  const label = isT9Mode ? 'T9 key sequence' : 'Latin string';
+  const placeholder = isT9Mode
+    ? 'Example: 33 6  or  4433555 555666'
+    : 'Example: em  or  hello';
+  const otherModeName = isT9Mode ? 'Latin' : 'T9';
+
+  const handleCopy = async () => {
+    if (!preview) return;
+    try {
+      await navigator.clipboard.writeText(preview);
+    } catch {
+      const el = document.createElement('textarea');
+      el.value = preview;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div className="flex flex-col gap-2 min-w-0">
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-3 min-h-[34px]">
+        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+          <Icon size={11} />
+          {label}
+        </label>
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-xs text-slate-600">{value.length} chars</span>
+          <Button
+            variant="secondary"
+            onClick={onSwap}
+            icon={ArrowLeftRight}
+            className="px-2 py-1"
+            title={`Convert the current value to ${otherModeName} and switch mode`}
+          >
+            Swap
+          </Button>
           <Button
             variant="ghost"
-            onClick={onCopy}
+            onClick={handleCopy}
             disabled={!preview}
             icon={copied ? Check : Copy}
             className="px-2 py-1"
           >
             {copied ? 'Copied' : 'Copy'}
           </Button>
-        )}
-        {onClear && (
           <Button
             variant="ghost"
-            onClick={onClear}
+            onClick={() => onChange('')}
             disabled={!value}
             icon={Trash2}
             className="px-2 py-1"
           >
             Clear
           </Button>
-        )}
+        </div>
       </div>
-    </div>
 
-    {/* Input */}
-    <textarea
-      spellCheck={false}
-      autoComplete="off"
-      className={
-        'bg-slate-900 border rounded-xl p-4 font-mono text-base text-slate-200 outline-none resize-none transition-colors placeholder-slate-600 focus:border-slate-500 min-h-[96px] ' +
-        (invalid ? 'border-red-800/60 focus:border-red-700' : 'border-slate-700')
-      }
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-    />
-
-    {/* Preview */}
-    <div className="flex flex-col gap-1.5 mt-1">
-      <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-        <ArrowRight size={10} />
-        {previewLabel}
-      </div>
-      <div
+      {/* Input */}
+      <textarea
+        spellCheck={false}
+        autoComplete="off"
         className={
-          'min-h-[64px] rounded-xl border p-3 font-mono text-sm break-words whitespace-pre-wrap ' +
-          (invalid
-            ? 'border-red-800/50 bg-red-950/20 text-red-300'
-            : 'border-slate-700 bg-slate-800/60 text-blue-300')
+          'bg-slate-900 border rounded-xl p-4 font-mono text-base text-slate-200 outline-none resize-none transition-colors placeholder-slate-600 focus:border-slate-500 min-h-[96px] ' +
+          (invalid ? 'border-red-800/60 focus:border-red-700' : 'border-slate-700')
         }
-      >
-        {invalid ? `⚠ ${invalidMsg}` : (preview || <span className="text-slate-600">…</span>)}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+
+      {/* Preview */}
+      <div className="flex flex-col gap-1.5 mt-1">
+        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+          <ArrowRight size={10} />
+          {previewLabel}
+        </div>
+        <div
+          className={
+            'min-h-[64px] rounded-xl border p-3 font-mono text-sm break-words whitespace-pre-wrap ' +
+            (invalid
+              ? 'border-red-800/50 bg-red-950/20 text-red-300'
+              : 'border-slate-700 bg-slate-800/60 text-blue-300')
+          }
+        >
+          {invalid ? `⚠ ${invalidMsg}` : (preview || <span className="text-slate-600">…</span>)}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-const DigitPanel = ({ value, onChange, preview, previewLabel, invalid, invalidMsg, showKeypad }) => {
-  const [copied, setCopied] = useState(false);
+const Keypad = ({ value, onChange }) => {
   const handleKey = (k) => onChange(value + k);
   const handleSpace = () => onChange(value + ' ');
   const handleBackspace = () => onChange(value.slice(0, -1));
 
-  const handleCopy = async () => {
-    if (!preview) return;
-    try {
-      await navigator.clipboard.writeText(preview);
-    } catch {
-      const el = document.createElement('textarea');
-      el.value = preview;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
   return (
-    <div className="flex flex-col gap-3 min-w-0">
-      <PanelShell
-        label="T9 key sequence"
-        icon={Hash}
-        value={value}
-        onChange={onChange}
-        placeholder="Example: 33 6  or  4433555 555666"
-        preview={preview}
-        previewLabel={previewLabel}
-        invalid={invalid}
-        invalidMsg={invalidMsg}
-        charCount={`${value.length} chars`}
-        onCopy={handleCopy}
-        onClear={() => onChange('')}
-        copied={copied}
-      />
-      {showKeypad && (
-        <Keypad
-          onKey={handleKey}
-          onSpace={handleSpace}
-          onBackspace={handleBackspace}
-        />
-      )}
-      {/* Decode cheat-sheet */}
+    <div className="flex flex-col gap-2">
+      <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+        <Keyboard size={11} />
+        Virtual keypad
+      </label>
+      <div className="rounded-xl bg-slate-900/70 border border-slate-700/70 p-3">
+        <div className="grid grid-cols-3 gap-1.5 max-w-[200px] mx-auto">
+          {KEYPAD_ROWS.flat().map((k, idx) => (
+            k === null ? (
+              <div key={`empty-${idx}`} aria-hidden="true" />
+            ) : (
+              <button
+                key={k}
+                type="button"
+                onClick={() => handleKey(k)}
+                className="aspect-square rounded-md bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 text-slate-200 font-mono text-base font-semibold transition-colors flex flex-col items-center justify-center"
+              >
+                <span>{k}</span>
+                <span className="text-[9px] text-slate-500 font-normal tracking-widest mt-px">
+                  {k === '0' ? '␣' : T9_KEYS[k] || ''}
+                </span>
+              </button>
+            )
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-1.5 mt-2 max-w-[200px] mx-auto">
+          <button
+            type="button"
+            onClick={handleSpace}
+            className="px-2 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-medium flex items-center justify-center gap-1 transition-colors"
+          >
+            <Space size={11} />
+            Split group
+          </button>
+          <button
+            type="button"
+            onClick={handleBackspace}
+            className="px-2 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-medium transition-colors"
+          >
+            ⌫ Delete 1 char
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CheatSheet = ({ mode }) => {
+  if (mode === 't9') {
+    return (
       <div className="rounded-xl bg-slate-900/70 border border-slate-700/70 p-3 text-[11px] text-slate-500 leading-relaxed">
         <div><span className="font-mono text-slate-300">0</span> alone (by itself) -&gt; space.</div>
         <div>A digit cluster containing <span className="font-mono text-slate-300">0</span> and longer than 1 character -&gt; kept as a number
           (e.g. <span className="font-mono text-slate-300">2024</span> -&gt; <span className="font-mono text-blue-300">2024</span>).</div>
         <div>Cluster without <span className="font-mono text-slate-300">0</span> -&gt; T9 multi-tap decode.</div>
       </div>
-    </div>
-  );
-};
-
-const LatinPanel = ({ value, onChange, preview, previewLabel, invalid, invalidMsg }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    if (!preview) return;
-    try {
-      await navigator.clipboard.writeText(preview);
-    } catch {
-      const el = document.createElement('textarea');
-      el.value = preview;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
+    );
+  }
   return (
-    <div className="flex flex-col gap-3 min-w-0">
-      <PanelShell
-        label="Latin string"
-        icon={Type}
-        value={value}
-        onChange={onChange}
-        placeholder="Example: em  or  hello"
-        preview={preview}
-        previewLabel={previewLabel}
-        invalid={invalid}
-        invalidMsg={invalidMsg}
-        charCount={`${value.length} chars`}
-        onCopy={handleCopy}
-        onClear={() => onChange('')}
-        copied={copied}
-      />
-      {/* Encode cheat-sheet */}
-      <div className="rounded-xl bg-slate-900/70 border border-slate-700/70 p-3 text-xs text-slate-500 leading-relaxed">
-        Type <span className="font-mono text-slate-300">a-z</span>, <span className="font-mono text-slate-300">0-9</span> and whitespace; other characters are dropped.
-        Letters are space-separated; number clusters pass through,
-        e.g. <span className="font-mono text-slate-300">hello 2024</span> -&gt; <span className="font-mono text-blue-300">44 33 555 555 666 0 2024</span>.
-      </div>
+    <div className="rounded-xl bg-slate-900/70 border border-slate-700/70 p-3 text-xs text-slate-500 leading-relaxed">
+      Type <span className="font-mono text-slate-300">a-z</span>, <span className="font-mono text-slate-300">0-9</span> and whitespace; other characters are dropped.
+      Letters are space-separated; number clusters pass through,
+      e.g. <span className="font-mono text-slate-300">hello 2024</span> -&gt; <span className="font-mono text-blue-300">44 33 555 555 666 0 2024</span>.
     </div>
   );
 };
-
-const Keypad = ({ onKey, onSpace, onBackspace }) => (
-  <div className="flex flex-col gap-2">
-    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-      <Keyboard size={11} />
-      Virtual keypad
-    </label>
-    <div className="rounded-xl bg-slate-900/70 border border-slate-700/70 p-3">
-      <div className="grid grid-cols-3 gap-1.5 max-w-[200px] mx-auto">
-        {KEYPAD_ROWS.flat().map((k, idx) => (
-          k === null ? (
-            <div key={`empty-${idx}`} aria-hidden="true" />
-          ) : (
-            <button
-              key={k}
-              type="button"
-              onClick={() => onKey(k)}
-              className="aspect-square rounded-md bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 text-slate-200 font-mono text-base font-semibold transition-colors flex flex-col items-center justify-center"
-            >
-              <span>{k}</span>
-              <span className="text-[9px] text-slate-500 font-normal tracking-widest mt-px">
-                {k === '0' ? '␣' : T9_KEYS[k] || ''}
-              </span>
-            </button>
-          )
-        ))}
-      </div>
-      <div className="grid grid-cols-2 gap-1.5 mt-2 max-w-[200px] mx-auto">
-        <button
-          type="button"
-          onClick={onSpace}
-          className="px-2 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-medium flex items-center justify-center gap-1 transition-colors"
-        >
-          <Space size={11} />
-          Split group
-        </button>
-        <button
-          type="button"
-          onClick={onBackspace}
-          className="px-2 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-medium transition-colors"
-        >
-          ⌫ Delete 1 char
-        </button>
-      </div>
-    </div>
-  </div>
-);
 
 const KeyMap = () => (
   <div className="flex flex-col gap-2">
@@ -462,7 +439,7 @@ const KeyMap = () => (
   </div>
 );
 
-const Examples = ({ onPickT9, onPickLatin }) => (
+const Examples = ({ onPick }) => (
   <div className="flex flex-col gap-2">
     <p className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
       <Lightbulb size={11} />
@@ -481,16 +458,16 @@ const Examples = ({ onPickT9, onPickLatin }) => (
           <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
-              title={`Load "${ex.latin}" into Latin box`}
-              onClick={() => onPickLatin(ex.latin)}
+              title={`Switch to Latin mode and load "${ex.latin}"`}
+              onClick={() => onPick('latin', ex.digits, ex.latin)}
               className="px-2 py-1 rounded text-[10px] font-mono bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
             >
               latin
             </button>
             <button
               type="button"
-              title={`Load "${ex.digits}" into T9 box`}
-              onClick={() => onPickT9(ex.digits)}
+              title={`Switch to T9 mode and load "${ex.digits}"`}
+              onClick={() => onPick('t9', ex.digits, ex.latin)}
               className="px-2 py-1 rounded text-[10px] font-mono bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
             >
               t9
